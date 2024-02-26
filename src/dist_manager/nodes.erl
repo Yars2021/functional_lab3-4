@@ -126,6 +126,10 @@ execute_tasks(_, _, _) -> [].
 list_size([]) -> 0;
 list_size([_ | Tail]) -> 1 + list_size(Tail).
 
+% Формирование задач для исполнителей из списка элементов
+form_tasks_single(_, []) -> [];
+form_tasks_single(Func, [[Element] | Tail]) -> [{Func, {First}} | form_tasks_single(Func, Tail)].
+
 % Формирование задач для исполнителей из списка пар элементов
 form_tasks_double(_, []) -> [];
 form_tasks_double(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks_double(Func, Tail)];
