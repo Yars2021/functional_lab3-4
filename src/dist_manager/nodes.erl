@@ -13,6 +13,8 @@
          group_tasks/2,
          execute_packs/2,
          execute_tasks/3,
+         list_size/1,
+         execute_reduce/2,
          test_1/0,
          test_2/0,
          test_3/0,
@@ -116,7 +118,14 @@ execute_packs([Pack | Tail], Pids) -> [execute_task(Pack, Pids) | execute_packs(
 execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_tasks(Tasks, Size), Pids);
 execute_tasks(_, _, _) -> [].
 
+% Длина списка
+list_size([]) -> 0;
+list_size([_ | Tail]) -> 1 + list_size(Tail).
 
+% Reduce на кластере. Func(Element, AccIn) -> AccOut.
+execute_reduce(Func, List) ->
+    Pids = spawn_workers(list_size(List)),
+    
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
