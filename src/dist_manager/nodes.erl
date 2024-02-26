@@ -135,6 +135,7 @@ normalize_list([[First] | Tail]) -> [First | normalize_list(Tail)];
 normalize_list([[First | [Second]] | Tail]) -> [First | [Second | normalize_list(Tail)]].
 
 % Reduce на кластере. Func(Element, AccIn) -> AccOut.
+execute_reduce(_, [], _) -> 0;
 execute_reduce(_, [Result], _) -> Result; 
 execute_reduce(Func, List, Pids) ->
     PackSize = list_size(List) / 2 / list_size(Pids),
