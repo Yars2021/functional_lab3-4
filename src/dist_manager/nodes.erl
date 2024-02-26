@@ -14,9 +14,11 @@
          execute_packs/2,
          execute_tasks/3,
          list_size/1,
-         form_tasks/2,
+         form_tasks_single/2,
+         form_tasks_double/2,
          normalize_list/1,
          execute_reduce/3,
+         execute_map/3,
          test_1/0,
          test_2/0,
          test_3/0,
@@ -125,22 +127,29 @@ list_size([]) -> 0;
 list_size([_ | Tail]) -> 1 + list_size(Tail).
 
 % Формирование задач для исполнителей из списка пар элементов
-form_tasks(_, []) -> [];
-form_tasks(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks(Func, Tail)];
-form_tasks(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form_tasks(Func, Tail)].
+form_tasks_double(_, []) -> [];
+form_tasks_double(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks_double(Func, Tail)];
+form_tasks_double(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form_tasks_double(Func, Tail)].
 
 % Формирование обычного списка из вложенного
 normalize_list([]) -> [];
 normalize_list([[First] | Tail]) -> [First | normalize_list(Tail)];
 normalize_list([[First | [Second]] | Tail]) -> [First | [Second | normalize_list(Tail)]].
 
-% Reduce на кластере. Func(Element, AccIn) -> AccOut.
+% Reduce на кластере. Func({Element, AccIn}) -> AccOut.
 execute_reduce(_, [], _) -> 0;
 execute_reduce(_, [Result], _) -> Result; 
 execute_reduce(Func, List, Pids) ->
     PackSize = list_size(List) / 2 / list_size(Pids),
     TaskArgs = group_list(List, 2),
-    execute_reduce(Func, normalize_list(execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize)), Pids).
+    execute_reduce(Func, normalize_list(execute_tasks(form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
+
+% Map на кластере. Func({Element}) -> Result.
+execute_map(_, [], _) -> 0;
+execute_map(Func, List, Pids) ->
+    PackSize = list_size(List) / list_size(Pids),
+    TaskArgs = group_list(List, 1),
+    execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
