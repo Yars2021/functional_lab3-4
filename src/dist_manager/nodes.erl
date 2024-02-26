@@ -10,7 +10,7 @@
          kill_by_pid/2,
          get_first/2,
          cut_first/2,
-         group_tasks/2,
+         group_list/2,
          execute_packs/2,
          execute_tasks/3,
          list_size/1,
@@ -106,31 +106,33 @@ cut_first([_ | Tail], Size) when Size > 0 -> cut_first(Tail, Size - 1);
 cut_first(List, _) -> List. 
 
 % Деление списка функций на пакеты размера Size
-group_tasks([], _) -> [];
-group_tasks(Tasks, 0) -> Tasks;
-group_tasks(Tasks, Size) ->
-    [get_first(Tasks, Size) | group_tasks(cut_first(Tasks, Size), Size)].
+group_list([], _) -> [];
+group_list(Tasks, 0) -> Tasks;
+group_list(Tasks, Size) ->
+    [get_first(Tasks, Size) | group_list(cut_first(Tasks, Size), Size)].
 
 % Исполнение списка пакетов на кластере
 execute_packs([], _) -> [];
 execute_packs([Pack | Tail], Pids) -> [execute_task(Pack, Pids) | execute_packs(Tail, Pids)].
 
 % Исполнение списка функций на кластере размера Size (деление на пакеты размера Size + исполнение пакетов)
-execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_tasks(Tasks, Size), Pids);
+execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_list(Tasks, Size), Pids);
 execute_tasks(_, _, _) -> [].
 
 % Длина списка
 list_size([]) -> 0;
 list_size([_ | Tail]) -> 1 + list_size(Tail).
 
-% Формирование задач для исполнителей
+% Формирование задач для исполнителей из списка пар элементов
 form_tasks(_, []) -> [];
-form_tasks(Func, [Head | Tail]) -> [{Func, {Head}} | form_tasks(Func, Tail)].
+form_tasks(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks(Func, Tail)];
+form_tasks(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form_tasks(Func, Tail)].
 
 % Reduce на кластере. Func(Element, AccIn) -> AccOut.
 execute_reduce(Func, List, Pids) ->
-    PackSize = list_size(List) / list_size(Pids),
-    execute_tasks(form_tasks(Func, List), Pids, PackSize).
+    PackSize = list_size(List) / 2 / list_size(Pids),
+    TaskArgs = group_list(List, 2),
+    execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
