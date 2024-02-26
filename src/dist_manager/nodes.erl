@@ -14,7 +14,8 @@
          execute_packs/2,
          execute_tasks/3,
          list_size/1,
-         execute_reduce/2,
+         form_tasks/2,
+         execute_reduce/3,
          test_1/0,
          test_2/0,
          test_3/0,
@@ -122,10 +123,14 @@ execute_tasks(_, _, _) -> [].
 list_size([]) -> 0;
 list_size([_ | Tail]) -> 1 + list_size(Tail).
 
+% Формирование задач для исполнителей
+form_tasks(_, []) -> [];
+form_tasks(Func, [Head | Tail]) -> [{Func, {Head}} | form_tasks(Func, Tail)].
+
 % Reduce на кластере. Func(Element, AccIn) -> AccOut.
-execute_reduce(Func, List) ->
-    Pids = spawn_workers(list_size(List)),
-    
+execute_reduce(Func, List, Pids) ->
+    PackSize = list_size(List) / list_size(Pids),
+    execute_tasks(form_tasks(Func, List), Pids, PackSize).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
