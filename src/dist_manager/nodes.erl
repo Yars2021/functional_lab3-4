@@ -128,7 +128,7 @@ list_size([_ | Tail]) -> 1 + list_size(Tail).
 
 % Формирование задач для исполнителей из списка элементов
 form_tasks_single(_, []) -> [];
-form_tasks_single(Func, [[Element] | Tail]) -> [{Func, {First}} | form_tasks_single(Func, Tail)].
+form_tasks_single(Func, [[Element] | Tail]) -> [{Func, {Element}} | form_tasks_single(Func, Tail)].
 
 % Формирование задач для исполнителей из списка пар элементов
 form_tasks_double(_, []) -> [];
@@ -138,7 +138,7 @@ form_tasks_double(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}}
 % Формирование обычного списка из вложенного
 normalize_list([]) -> [];
 normalize_list([[First] | Tail]) -> [First | normalize_list(Tail)];
-normalize_list([[First | [Second]] | Tail]) -> [First | [Second | normalize_list(Tail)]].
+normalize_list([InnerList | Tail]) -> InnerList ++ normalize_list(Tail).
 
 % Reduce на кластере. Func({Element, AccIn}) -> AccOut.
 execute_reduce(_, [], _) -> 0;
@@ -153,7 +153,7 @@ execute_map(_, [], _) -> 0;
 execute_map(Func, List, Pids) ->
     PackSize = list_size(List) / list_size(Pids),
     TaskArgs = group_list(List, 1),
-    execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize).
+    execute_map(Func, normalize_list(execute_tasks(form_tasks_single(Func, TaskArgs), Pids, PackSize)), Pids).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
