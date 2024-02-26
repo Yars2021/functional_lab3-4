@@ -13,6 +13,7 @@
          group_list/2,
          execute_packs/2,
          execute_tasks/3,
+         get_min/2,
          list_size/1,
          form_tasks_single/2,
          form_tasks_double/2,
@@ -122,6 +123,10 @@ execute_packs([Pack | Tail], Pids) -> [execute_task(Pack, Pids) | execute_packs(
 execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_list(Tasks, Size), Pids);
 execute_tasks(_, _, _) -> [].
 
+% Минимум из двух
+get_min(A, B) when A > B -> B;
+get_min(A, _) -> A.
+
 % Длина списка
 list_size([]) -> 0;
 list_size([_ | Tail]) -> 1 + list_size(Tail).
@@ -144,16 +149,15 @@ normalize_list([InnerList | Tail]) -> InnerList ++ normalize_list(Tail).
 execute_reduce(_, [], _) -> 0;
 execute_reduce(_, [Result], _) -> Result; 
 execute_reduce(Func, List, Pids) ->
-    PackSize = list_size(List) / 2 / list_size(Pids),
+    PackSize = get_min(list_size(Pids), list_size(List) / 2 / list_size(Pids)),
     TaskArgs = group_list(List, 2),
     execute_reduce(Func, normalize_list(execute_tasks(form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
 
 % Map на кластере. Func({Element}) -> Result.
-execute_map(_, [], _) -> 0;
 execute_map(Func, List, Pids) ->
-    PackSize = list_size(List) / list_size(Pids),
+    PackSize = get_min(list_size(Pids), list_size(List) / list_size(Pids)),
     TaskArgs = group_list(List, 1),
-    execute_map(Func, normalize_list(execute_tasks(form_tasks_single(Func, TaskArgs), Pids, PackSize)), Pids).
+    normalize_list(execute_tasks(form_tasks_single(Func, TaskArgs), Pids, PackSize)).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
