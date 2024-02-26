@@ -15,6 +15,7 @@
          execute_tasks/3,
          list_size/1,
          form_tasks/2,
+         normalize_list/1,
          execute_reduce/3,
          test_1/0,
          test_2/0,
@@ -130,15 +131,15 @@ form_tasks(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form
 
 % Формирование обычного списка из вложенного
 normalize_list([]) -> [];
-normalize_list([[First] | Tail]) -> [{fun({A}) -> A end, {First}} | normalize_list(Tail)];
-normalize_list([[First | [Second]] | Tail]) -> [{Func, {First, Second}} | normalize_list(Tail)].
+normalize_list([[First] | Tail]) -> [First | normalize_list(Tail)];
+normalize_list([[First | [Second]] | Tail]) -> [First | [Second | normalize_list(Tail)]].
 
 % Reduce на кластере. Func(Element, AccIn) -> AccOut.
 execute_reduce(_, [Result], _) -> Result; 
 execute_reduce(Func, List, Pids) ->
     PackSize = list_size(List) / 2 / list_size(Pids),
     TaskArgs = group_list(List, 2),
-    normalize_list(execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize)).
+    execute_reduce(Func, normalize_list(execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize)), Pids).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
