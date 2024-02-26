@@ -128,11 +128,17 @@ form_tasks(_, []) -> [];
 form_tasks(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks(Func, Tail)];
 form_tasks(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form_tasks(Func, Tail)].
 
+% Формирование обычного списка из вложенного
+normalize_list([]) -> [];
+normalize_list([[First] | Tail]) -> [{fun({A}) -> A end, {First}} | normalize_list(Tail)];
+normalize_list([[First | [Second]] | Tail]) -> [{Func, {First, Second}} | normalize_list(Tail)].
+
 % Reduce на кластере. Func(Element, AccIn) -> AccOut.
+execute_reduce(_, [Result], _) -> Result; 
 execute_reduce(Func, List, Pids) ->
     PackSize = list_size(List) / 2 / list_size(Pids),
     TaskArgs = group_list(List, 2),
-    execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize).
+    normalize_list(execute_tasks(form_tasks(Func, TaskArgs), Pids, PackSize)).
 
 % Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 3 элемента в пакете)
 test_1() ->
