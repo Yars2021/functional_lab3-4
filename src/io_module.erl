@@ -16,7 +16,7 @@ loop_input(Workers) ->
         eof ->
             [Pid ! {stop, nil, self()} || Pid <- Workers];
         Line ->
-            [Pid ! {new_point, parse_point(Line), self()} || Pid <- Workers]
+            [Pid ! {point, parse_point(Line), self()} || Pid <- Workers]
     end,
     loop_input(Workers).
 
@@ -34,13 +34,10 @@ loop_output() ->
 
 % Обработка точки
 parse_point(Line) ->
-    Pair = string:tokens(string:trim(Line), " "),
-    [
-            case string:to_float(Num) of
-                {error, no_float} -> list_to_integer(Num);
-                {Float, _} -> Float
-            end || Num <- Pair
-    ].
+    [case string:to_float(Num) of
+        {error, no_float} -> list_to_integer(Num);
+        {Float, _} -> Float
+    end || Num <- string:tokens(string:trim(Line), " ")].
 
 % Вывод чисел
 print_number(Nums) ->
