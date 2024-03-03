@@ -121,7 +121,8 @@ execute_packs([], _) -> [];
 execute_packs([Pack | Tail], Pids) ->
     [execute_task(Pack, Pids) | execute_packs(Tail, Pids)].
 
-% Исполнение списка функций на кластере размера Size (деление на пакеты размера Size + исполнение пакетов)
+% Исполнение списка функций на кластере размера Size
+% (деление на пакеты размера Size + исполнение пакетов)
 execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_list(Tasks, Size), Pids);
 execute_tasks(_, _, _) -> [].
 
@@ -156,7 +157,9 @@ execute_reduce(_, [Result], _) -> Result;
 execute_reduce(Func, List, Pids) ->
     PackSize = get_min(list_size(Pids), list_size(List) / 2 / list_size(Pids)),
     TaskArgs = group_list(List, 2),
-    execute_reduce(Func, normalize_list(execute_tasks(form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
+    execute_reduce(Func,
+        normalize_list(
+            execute_tasks(form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
 
 % Map на кластере. Func({Element}) -> Result.
 execute_map(Func, List, Pids) ->
@@ -182,8 +185,9 @@ test2() ->
                         nodes:spawn_workers(3),
                         2).
 
-% Экспериментальный тест 
-% (4 функции на кластере из 3 узлов, группировка по 2 элемента в пакете, некоторые из функций ошибочны)
+% Экспериментальный тест
+% (4 функции на кластере из 3 узлов, группировка по 2 элемента в пакете,
+% некоторые из функций ошибочны)
 test3() ->
     nodes:execute_tasks([{fun({A}) -> -A end, {65}},
                         {fun({A, B, C}) -> A * B * C end, {"ABC", "DDD", 9}},
@@ -192,8 +196,9 @@ test3() ->
                         nodes:spawn_workers(3),
                         2).
 
-% Экспериментальный тест 
-% (4 функции на кластере из 3 узлов, группировка по 5 элементов в пакете, что больше, чем количестов исполнителей)
+% Экспериментальный тест
+% (4 функции на кластере из 3 узлов, группировка по 5 элементов в пакете,
+% что больше, чем количестов исполнителей)
 test4() ->
     nodes:execute_tasks([{fun({A}) -> -A end, {65}},
                         {fun({A, B, C}) -> A * B * C end, {7, 8, 9}},
