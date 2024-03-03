@@ -31,7 +31,7 @@
 
 % Структура сообщения менеджеру:
 % {Pid исполнителя, {recv_success}} - подтверждение доставки
-% {Pid исполнителя, {Статус исполнения, Результат}} - результат исполнения функции 
+% {Pid исполнителя, {Статус исполнения, Результат}} - результат исполнения функции
 
 % ---------------------------------------------------------------------------------------------
 %   Функции для узла-исполнителя
@@ -79,9 +79,10 @@ spawn_workers(N) when N > 0 ->
     [spawn(nodes, worker_message_handler, []) | spawn_workers(N - 1)];
 spawn_workers(_) -> [].
 
-% Отправка функций на исполнение кластеру и обработка ответа (если функций больше, чем процессов, "лишние" функции исполнены не будут)
+% Отправка функций на исполнение кластеру и обработка ответа
+% (если функций больше, чем процессов, "лишние" функции исполнены не будут)
 execute_task([], _) -> [];
-execute_task(_, []) -> []; 
+execute_task(_, []) -> [];
 execute_task([{Task, Args} | FuncTail], [Pid | PidTail]) ->
     send_to_worker(Pid, Task, Args),
     [recv_from_worker(Pid) | execute_task(FuncTail, PidTail)].
@@ -106,8 +107,8 @@ get_first(_, _) -> [].
 
 % Взять список без Size первых элементов
 cut_first(List, 0) -> List;
-cut_first([_ | Tail], Size) when Size > 0 -> cut_first(Tail, Size - 1); 
-cut_first(List, _) -> List. 
+cut_first([_ | Tail], Size) when Size > 0 -> cut_first(Tail, Size - 1);
+cut_first(List, _) -> List.
 
 % Деление списка функций на пакеты размера Size
 group_list([], _) -> [];
@@ -117,7 +118,8 @@ group_list(Tasks, Size) ->
 
 % Исполнение списка пакетов на кластере
 execute_packs([], _) -> [];
-execute_packs([Pack | Tail], Pids) -> [execute_task(Pack, Pids) | execute_packs(Tail, Pids)].
+execute_packs([Pack | Tail], Pids) ->
+    [execute_task(Pack, Pids) | execute_packs(Tail, Pids)].
 
 % Исполнение списка функций на кластере размера Size (деление на пакеты размера Size + исполнение пакетов)
 execute_tasks(Tasks, Pids, Size) when Size > 0 -> execute_packs(group_list(Tasks, Size), Pids);
@@ -133,12 +135,15 @@ list_size([_ | Tail]) -> 1 + list_size(Tail).
 
 % Формирование задач для исполнителей из списка элементов
 form_tasks_single(_, []) -> [];
-form_tasks_single(Func, [[Element] | Tail]) -> [{Func, {Element}} | form_tasks_single(Func, Tail)].
+form_tasks_single(Func, [[Element] | Tail]) ->
+    [{Func, {Element}} | form_tasks_single(Func, Tail)].
 
 % Формирование задач для исполнителей из списка пар элементов
 form_tasks_double(_, []) -> [];
-form_tasks_double(Func, [[First] | Tail]) -> [{fun({A}) -> A end, {First}} | form_tasks_double(Func, Tail)];
-form_tasks_double(Func, [[First | [Second]] | Tail]) -> [{Func, {First, Second}} | form_tasks_double(Func, Tail)].
+form_tasks_double(Func, [[First] | Tail]) ->
+    [{fun({A}) -> A end, {First}} | form_tasks_double(Func, Tail)];
+form_tasks_double(Func, [[First | [Second]] | Tail]) ->
+    [{Func, {First, Second}} | form_tasks_double(Func, Tail)].
 
 % Формирование обычного списка из вложенного
 normalize_list([]) -> [];
@@ -147,7 +152,7 @@ normalize_list([InnerList | Tail]) -> InnerList ++ normalize_list(Tail).
 
 % Reduce на кластере. Func({Element, AccIn}) -> AccOut.
 execute_reduce(_, [], _) -> 0;
-execute_reduce(_, [Result], _) -> Result; 
+execute_reduce(_, [Result], _) -> Result;
 execute_reduce(Func, List, Pids) ->
     PackSize = get_min(list_size(Pids), list_size(List) / 2 / list_size(Pids)),
     TaskArgs = group_list(List, 2),
@@ -177,16 +182,18 @@ test2() ->
                         nodes:spawn_workers(3),
                         2).
 
-% Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 2 элемента в пакете, некоторые из функций ошибочны)
+% Экспериментальный тест 
+% (4 функции на кластере из 3 узлов, группировка по 2 элемента в пакете, некоторые из функций ошибочны)
 test3() ->
     nodes:execute_tasks([{fun({A}) -> -A end, {65}},
-                        {fun({A, B, C}) -> A * B * C end, {"ABC", "DDD", 9}},   % Пытаемся умножать строки
+                        {fun({A, B, C}) -> A * B * C end, {"ABC", "DDD", 9}},
                         {fun({A, B}) -> [A | B] end, {"ABCD", [883883]}},
-                        {fun({A}) -> A * A * A end, {}}],                       % Не передаем аргументов
+                        {fun({A}) -> A * A * A end, {}}],
                         nodes:spawn_workers(3),
                         2).
 
-% Экспериментальный тест (4 функции на кластере из 3 узлов, группировка по 5 элементов в пакете, что больше, чем количестов исполнителей)
+% Экспериментальный тест 
+% (4 функции на кластере из 3 узлов, группировка по 5 элементов в пакете, что больше, чем количестов исполнителей)
 test4() ->
     nodes:execute_tasks([{fun({A}) -> -A end, {65}},
                         {fun({A, B, C}) -> A * B * C end, {7, 8, 9}},
