@@ -1,66 +1,46 @@
-#!/usr/bin/env escript
-
 -module(main).
 
--import(io_module, []).
--import(math_module, []).
+-export([main/1]).
 
--export([]).
+% Разложение спика аргументов в кортеж
+get_args_tuple([]) -> {};
+get_args_tuple([Window | [Step | Methods]]) ->
+    WindowVal = string:to_integer(Window),
+    StepVal = string:to_float(Step),
+    {element(1, WindowVal), element(1, StepVal), Methods}.
 
 % Основная функция
-main(Args) -> argparse:run(Args, cli(), #{progname => fp_lab3}).
-
-% Обработка аргументов при помощи argparse
-cli() ->
-    #{
-        arguments =>
-            [
-                #{name => method,
-                    short => $m,
-                    action => append,
-                    type => {atom, [linear, lagrange, gauss]}
-                }
-                #{name => step,
-                    default => 0.2,
-                    type => float,
-                    short => $s,
-                    help => "Step"
-                },
-                #{name => window,
-                    default => 5,
-                    type => float,
-                    short => $w,
-                    help => "Window size"
-                },
-            ],
-        handler =>
-            fun(#{m := Methods, s := Step, w := WindowLen} = Args) ->
-                io:format("~p~n", [Args]),
-                OutputPid = output:start(),
-                link(OutputPid),
-                Workers = lists:map(
-                    fun(Method) ->
-                        case Method of
-                            linear -> 
-                                Pid = linear:start(OutputPid, Step),
-                                link(Pid),
-                                Pid;
-                            lagrange ->
-                                Pid = lagrange:start(OutputPid, Step, WindowLen),
-                                link(Pid),
-                                Pid;
-                            gauss ->
-                                Pid = gauss:start(OutputPid, Step, WindowLen),
-                                link(Pid),
-                                Pid;
-                            _ ->
-                                io:format("~p~n", [Method])
-                        end
-                    end,
-                    Methods),
-                    wait(Workers, input:start(Workers), OutputPid)
+main(Args) ->
+    io:format("Args: ~p~n", [Args]),
+    ArgsTuple = get_args_tuple(Args),
+    Window = element(1, ArgsTuple),
+    Step = element(2, ArgsTuple),
+    Methods = element(3, ArgsTuple),
+    OutputPid = io_module:start_output(),
+    link(OutputPid),
+    Methods,
+    Workers = lists:map(
+        fun(Method) ->
+            AtomMethod = list_to_atom(Method),
+            case AtomMethod of
+                linear ->
+                    Pid = math_module:start_linear(OutputPid, Step),
+                    link(Pid),
+                    Pid;
+                lagrange ->
+                    Pid = math_module:start_lagrange(OutputPid, Step, Window),
+                    link(Pid),
+                    Pid;
+                newton ->
+                    Pid = math_module:start_newton(OutputPid, Step, Window),
+                    link(Pid),
+                    Pid;
+                _ ->
+                    io:format("~p~n", [AtomMethod])
             end
-    }.
+        end,
+        Methods),
+    wait(Workers, io_module:start_input(Workers), OutputPid).
 
 % Ожидание процессов
 wait(Workers, IPid, OPid) ->
