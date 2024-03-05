@@ -28,7 +28,8 @@ loop_output() ->
             print_number(X),
             print_number(Y);
         Msg ->
-            io:format("~p~n", [Msg])
+            % io:format("~p~n", [Msg])
+            Msg
     end,
     loop_output().
 
@@ -41,6 +42,8 @@ parse_point(Line) ->
 
 % Вывод чисел
 print_number(Nums) ->
-    io:format("~s~n", [lists:join("\t",
+    Message = [lists:join("\t",
                        lists:map(fun(N) -> erlang:float_to_list(float(N), [{decimals, 2}]) end,
-                       Nums))]).
+                       Nums))],
+    % io:format("~s~n", Message),
+    Message.
