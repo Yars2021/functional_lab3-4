@@ -24,7 +24,8 @@ loop_input(Workers) ->
 loop_output() ->
     receive
         {result, {Name, [X, Y]}, _} ->
-            io:format("~p~n", [Name]),
+            % io:format("~p~n", [Name]),
+            Name,
             print_number(X),
             print_number(Y);
         Msg ->
