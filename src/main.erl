@@ -11,7 +11,6 @@ get_args_tuple([Window | [Step | Methods]]) ->
 
 % Основная функция
 main(Args) ->
-    [Args],
     ArgsTuple = get_args_tuple(Args),
     Window = element(1, ArgsTuple),
     Step = element(2, ArgsTuple),
@@ -36,7 +35,7 @@ main(Args) ->
                     link(Pid),
                     Pid;
                 _ ->
-                    [AtomMethod]
+                    AtomMethod
             end
         end,
         Methods),
