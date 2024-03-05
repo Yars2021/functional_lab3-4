@@ -19,11 +19,7 @@
          form_tasks_double/2,
          normalize_list/1,
          execute_reduce/3,
-         execute_map/3,
-         test_1/0,
-         test_2/0,
-         test_3/0,
-         test_4/0]).
+         execute_map/3]).
 
 % Структура сообщения исполнителю:
 % {Pid исполнителя, Функция от кортежа аргументов, Кортеж аргументов}
