@@ -47,7 +47,7 @@ loop_linear(Step, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                io:format("~p~n", [Message]),
+                % io:format("~p~n", [Message]),
                 loop_linear(Step, Points, OutputPid)
         end,
     loop_linear(Step, NewPoints, OutputPid).
@@ -100,7 +100,7 @@ loop_lagrange(Step, Window, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                io:format("~p~n", [Message]),
+                % io:format("~p~n", [Message]),
                 loop_lagrange(Step, Window, Points, OutputPid)
         end,
     loop_lagrange(Step, Window, NewPoints, OutputPid).
@@ -162,7 +162,7 @@ loop_newton(Step, Window, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                io:format("~p~n", [Message]),
+                % io:format("~p~n", [Message]),
                 loop_newton(Step, Window, Points, OutputPid)
         end,
     loop_newton(Step, Window, NewPoints, OutputPid).
