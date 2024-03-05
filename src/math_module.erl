@@ -6,7 +6,8 @@
          start_newton/3]).
 
 % Шаг и 2 точки -> отрезок (1-dim)
-float_range(Step, First, Last) when First - Step < Last -> [First | float_range(Step, First + Step, Last)];
+float_range(Step, First, Last) when First - Step < Last ->
+    [First | float_range(Step, First + Step, Last)];
 float_range(_, _, _) -> [].
 
 % Получение координаты точки
