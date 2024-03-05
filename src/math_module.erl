@@ -1,7 +1,6 @@
 -module(math_module).
 
--export([float_range/3,
-         start_linear/2,
+-export([start_linear/2,
          start_lagrange/3,
          start_newton/3]).
 
@@ -48,7 +47,7 @@ loop_linear(Step, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                Message,
+                io:format("~p~n", [Message]),
                 loop_linear(Step, Points, OutputPid)
         end,
     loop_linear(Step, NewPoints, OutputPid).
@@ -101,7 +100,7 @@ loop_lagrange(Step, Window, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                Message,
+                io:format("~p~n", [Message]),
                 loop_lagrange(Step, Window, Points, OutputPid)
         end,
     loop_lagrange(Step, Window, NewPoints, OutputPid).
@@ -163,7 +162,7 @@ loop_newton(Step, Window, Points, OutputPid) ->
             {stop, _} ->
                 exit(ok);
             Message ->
-                Message,
+                io:format("~p~n", [Message]),
                 loop_newton(Step, Window, Points, OutputPid)
         end,
     loop_newton(Step, Window, NewPoints, OutputPid).
