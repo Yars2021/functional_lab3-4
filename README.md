@@ -80,6 +80,157 @@ o o o o o o . . x x x
 ---
 
 ## Выполнение
+Приложение состоит из нескольких модулей:
+- io_module содержит функции, ответственные за ввод и вывод
+- math_module содержит математические функции
+- main содержит обработку аргументов командной строки и отправку сообщений на другие модули
 
+Выбранные методы интерполяции:
+- Линейная
+- Лагранжа
+- Ньютона
+
+Пример работы программы:
+Вводятся данные функции sin(x)
+![image](https://github.com/Yars2021/functional_lab3-4/assets/79992244/4adf16a5-586e-414f-be6e-1cec29c3d97c)
+
+Основные функции воода-вывода:
+```
+% Цикл ввода
+loop_input(Workers) ->
+    case io:get_line("") of
+        eof ->
+            [Pid ! {stop, nil, self()} || Pid <- Workers];
+        Line ->
+            [Pid ! {point, parse_point(Line), self()} || Pid <- Workers]
+    end,
+    loop_input(Workers).
+
+% Цикл вывода
+loop_output() ->
+    receive
+        {result, {Name, [X, Y]}, _} ->
+            io:format("~p~n", [Name]),
+            Name,
+            print_number(X),
+            print_number(Y);
+        Msg ->
+            io:format("~p~n", [Msg])
+            Msg
+    end,
+    loop_output().
+```
+
+Основные функции интерполяции:
+```
+% Цикл линейной интерполяции
+loop_linear(Step, Points, OutputPid) ->
+    NewPoints =
+        receive
+            {point, Point, _} ->
+                case queue:len(Points) of
+                    2 ->
+                        lin_process(queue:drop(queue:in(Point, Points)),
+                                    Step,
+                                    OutputPid);
+                    1 ->
+                        lin_process(queue:in(Point, Points), Step, OutputPid);
+                    0 ->
+                        loop_linear(Step, queue:in(Point, Points), OutputPid)
+                end;
+            {stop, _} ->
+                exit(ok);
+            Message ->
+                % io:format("~p~n", [Message]),
+                loop_linear(Step, Points, OutputPid)
+        end,
+    loop_linear(Step, NewPoints, OutputPid).
+
+% Цикл интерполяции Лагранжа
+loop_lagrange(Step, Window, Points, OutputPid) ->
+    WindowPrev = Window - 1,
+    NewPoints =
+        receive
+            {point, Point, _} ->
+                case queue:len(Points) of
+                    Window ->
+                        lag_process(queue:drop(queue:in(Point, Points)),
+                                    Step,
+                                    OutputPid);
+                    WindowPrev ->
+                        lag_process(queue:in(Point, Points), Step, OutputPid);
+                    _ ->
+                        loop_lagrange(Step, Window, queue:in(Point, Points), OutputPid)
+                end;
+            {stop, _} ->
+                exit(ok);
+            Message ->
+                % io:format("~p~n", [Message]),
+                loop_lagrange(Step, Window, Points, OutputPid)
+        end,
+    loop_lagrange(Step, Window, NewPoints, OutputPid).
+
+% Цикл интерполяции Ньютона
+loop_newton(Step, Window, Points, OutputPid) ->
+    WindowPrev = Window - 1,
+    NewPoints =
+        receive
+            {point, Point, _} ->
+                case queue:len(Points) of
+                    Window ->
+                        new_process(queue:drop(queue:in(Point, Points)),
+                                    Window,
+                                    Step,
+                                    OutputPid);
+                    WindowPrev ->
+                        new_process(queue:in(Point, Points), Window, Step, OutputPid);
+                    _ ->
+                        loop_newton(Step, Window, queue:in(Point, Points), OutputPid)
+                end;
+            {stop, _} ->
+                exit(ok);
+            Message ->
+                % io:format("~p~n", [Message]),
+                loop_newton(Step, Window, Points, OutputPid)
+        end,
+    loop_newton(Step, Window, NewPoints, OutputPid).
+```
+
+Основная функция в main:
+```
+% Основная функция
+main(Args) ->
+    ArgsTuple = get_args_tuple(Args),
+    Window = element(1, ArgsTuple),
+    Step = element(2, ArgsTuple),
+    Methods = element(3, ArgsTuple),
+    OutputPid = io_module:start_output(),
+    link(OutputPid),
+    Methods,
+    Workers = lists:map(
+        fun(Method) ->
+            AtomMethod = list_to_atom(Method),
+            case AtomMethod of
+                linear ->
+                    Pid = math_module:start_linear(OutputPid, Step),
+                    link(Pid),
+                    Pid;
+                lagrange ->
+                    Pid = math_module:start_lagrange(OutputPid, Step, Window),
+                    link(Pid),
+                    Pid;
+                newton ->
+                    Pid = math_module:start_newton(OutputPid, Step, Window),
+                    link(Pid),
+                    Pid;
+                _ ->
+                    AtomMethod
+            end
+        end,
+        Methods),
+    wait(Workers, io_module:start_input(Workers), OutputPid).
+```
 
 ## Выводы
+- В ходе выполонения работы было создано модульное приложение, производящее интерполяцию по данным, принимаемым из потока ввода.
+- Разделение на модули позволило исполнять различные части в разных процессах, обменивающихся сообщениями.
