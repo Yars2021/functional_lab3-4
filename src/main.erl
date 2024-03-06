@@ -12,9 +12,7 @@ get_args_tuple([Window | [Step | Methods]]) ->
 % Основная функция
 main(Args) ->
     ArgsTuple = get_args_tuple(Args),
-    Window = element(1, ArgsTuple),
-    Step = element(2, ArgsTuple),
-    Methods = element(3, ArgsTuple),
+    {Window, Step, Methods) = ArgsTuple,
     OutputPid = io_module:start_output(),
     link(OutputPid),
     Methods,
