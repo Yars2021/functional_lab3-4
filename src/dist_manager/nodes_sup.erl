@@ -41,7 +41,7 @@ init({}) ->
 % Создание узла
 create_node(Supervisor, ID) ->
     NodeSpec =
-        #{id => list_to_atom("node_" ++ integer_to_list(ID)), 
+        #{id => list_to_atom("node_" ++ integer_to_list(ID)),
            start => {nodes_worker, start_link, []},
            restart => permanent,
            shutdown => 5000,
@@ -110,9 +110,9 @@ get_first(_, _) -> [].
 cut_first(List, 0) -> List;
 
 cut_first([_ | Tail], Size) when Size > 0 ->
-    cut_first(Tail, Size - 1); 
+    cut_first(Tail, Size - 1);
 
-cut_first(List, _) -> List. 
+cut_first(List, _) -> List.
 
 
 % Деление списка на пакеты размера Size
@@ -131,7 +131,8 @@ execute_packs([Pack | Tail], Pids) ->
     [execute_pack(Pack, Pids) | execute_packs(Tail, Pids)].
 
 
-% Исполнение списка функций на кластере размера Size (деление на пакеты размера Size + исполнение пакетов)
+% Исполнение списка функций на кластере размера Size
+% (деление на пакеты размера Size + исполнение пакетов)
 execute_tasks(Tasks, Pids, Size) when Size > 0 ->
     execute_packs(group_list(Tasks, Size), Pids);
 
@@ -179,13 +180,15 @@ linearize_list([InnerList | Tail]) ->
 % Reduce на кластере. Func({Element, AccIn}) -> AccOut.
 execute_reduce(_, [], _) -> 0;
 
-execute_reduce(_, [Result], _) -> Result; 
+execute_reduce(_, [Result], _) -> Result;
 
 execute_reduce(Func, List, Pids) ->
     PackSize = get_min(list_size(Pids), list_size(List) / 2 / list_size(Pids)),
     TaskArgs = group_list(List, 2),
     execute_reduce(Func,
-                   linearize_list(execute_tasks(form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
+                   linearize_list(
+                       execute_tasks(
+                           form_tasks_double(Func, TaskArgs), Pids, PackSize)), Pids).
 
 
 % Map на кластере. Func({Element}) -> Result.
